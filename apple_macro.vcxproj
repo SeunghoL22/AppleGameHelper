@@ -122,6 +122,7 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>C:\opencv\install\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -135,12 +136,14 @@
   <ItemGroup>
     <ClCompile Include="AppleGameSolver.cpp" />
     <ClCompile Include="ImageProcessor.cpp" />
+    <ClCompile Include="MouseController.cpp" />
     <ClCompile Include="ScreenCapture.cpp" />
     <ClCompile Include="test_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AppleGameSolver.h" />
     <ClInclude Include="ImageProcessor.h" />
+    <ClInclude Include="MouseController.h" />
     <ClInclude Include="ScreenCapture.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

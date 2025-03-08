@@ -15,16 +15,16 @@ int recognizeNumber(const cv::Mat& roi, const std::vector<cv::Mat>& templates) {
     int bestMatch = -1;
     for (int i = 0; i < templates.size(); ++i) {
         if (templates[i].empty()) {
-            std::cerr << "템플릿 " << i + 1 << "이 비어 있음" << std::endl;
+            //std::cerr << "템플릿 " << i + 1 << "이 비어 있음" << std::endl;
             continue;
         }
         if (roi.cols < templates[i].cols || roi.rows < templates[i].rows) {
-            std::cerr << "ROI(" << roi.cols << "x" << roi.rows << ")가 템플릿 " << i + 1
-                << "(" << templates[i].cols << "x" << templates[i].rows << ")보다 작음" << std::endl;
+            //std::cerr << "ROI(" << roi.cols << "x" << roi.rows << ")가 템플릿 " << i + 1
+            //    << "(" << templates[i].cols << "x" << templates[i].rows << ")보다 작음" << std::endl;
             continue;
         }
-        std::cout << "ROI: " << roi.cols << "x" << roi.rows << ", 템플릿 " << i + 1 << ": "
-            << templates[i].cols << "x" << templates[i].rows << std::endl;
+        //std::cout << "ROI: " << roi.cols << "x" << roi.rows << ", 템플릿 " << i + 1 << ": "
+        //    << templates[i].cols << "x" << templates[i].rows << std::endl;
         cv::Mat result;
         try {
             cv::matchTemplate(roi, templates[i], result, cv::TM_CCOEFF_NORMED);
