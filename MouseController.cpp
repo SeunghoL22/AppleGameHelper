@@ -7,7 +7,7 @@ void MouseController::delay(int milliseconds) {
 }
 
 void MouseController::moveMouse(int x, int y) {
-    std::cout << "Moving mouse to (" << x << ", " << y << ")\n";
+    //std::cout << "Moving mouse to (" << x << ", " << y << ")\n";
     SetCursorPos(x, y); // 마우스 커서를 (x, y)로 이동
     delay(10); // 이동 후 10ms 대기 (드래그를 위한 짧은 간격)
 }
@@ -21,7 +21,7 @@ void MouseController::leftButtonDown() {
         std::cerr << "Failed to send left button down event\n";
     }
     else {
-        std::cout << "Left button down\n";
+    //    std::cout << "Left button down\n";
     }
     delay(10); // 클릭 후 10ms 대기
 }
@@ -35,13 +35,13 @@ void MouseController::leftButtonUp() {
         std::cerr << "Failed to send left button up event\n";
     }
     else {
-        std::cout << "Left button up\n";
+    //    std::cout << "Left button up\n";
     }
     delay(10); // 클릭 후 10ms 대기
 }
 
 void MouseController::dragMouse(int startX, int startY, int endX, int endY) {
-    std::cout << "Dragging from (" << startX << ", " << startY << ") to (" << endX << ", " << endY << ")\n";
+    //std::cout << "Dragging from (" << startX << ", " << startY << ") to (" << endX << ", " << endY << ")\n";
     moveMouse(startX, startY);    // 시작점으로 이동
     leftButtonDown();             // 왼쪽 버튼 누름
 
@@ -102,8 +102,8 @@ void MouseController::selectAppleBundle(const std::vector<std::pair<int, int>>& 
     endY = std::max(gameMinY, std::min(gameMaxY, endY));
 
     // 조정된 좌표 로그 출력
-    std::cout << "Adjusted drag coordinates: start(" << startX << ", " << startY
-        << "), end(" << endX << ", " << endY << ")\n";
+    //std::cout << "Adjusted drag coordinates: start(" << startX << ", " << startY
+    //    << "), end(" << endX << ", " << endY << ")\n";
 
     // 마우스 드래그로 사과 묶음 선택 (직사각형 형태)
     dragMouse(startX, startY, endX, endY);
