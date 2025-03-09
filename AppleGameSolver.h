@@ -4,7 +4,6 @@
 #include <vector>
 #include <utility>
 
-// 사과 묶음을 찾는 함수 선언
-std::vector<std::pair<int, int>> findAppleBundle(std::vector<std::vector<int>>& grid);
+std::vector<std::pair<int, int>> findAppleBundle(const std::vector<std::vector<int>>& grid);
 
-#endif // APPLE_GAME_SOLVER_H
+#endif
