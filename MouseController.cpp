@@ -46,7 +46,7 @@ void MouseController::dragMouse(int startX, int startY, int endX, int endY) {
     leftButtonDown();             // 왼쪽 버튼 누름
 
     // 직사각형 드래그를 위해 점진적으로 이동 (대각선 보간)
-    int steps = std::max(abs(endX - startX), abs(endY - startY)) / 10; // 10픽셀 단위로 이동
+    int steps = std::max(abs(endX - startX), abs(endY - startY)) / 20; // 10픽셀 단위로 이동
     if (steps == 0) steps = 1;
 
     for (int i = 0; i <= steps; ++i) {
