@@ -1,129 +1,376 @@
-#include <vector>
+Ôªø#include <vector>
 #include <utility>
 #include <algorithm>
 #include <unordered_map>
+#include <string>
+#include <queue>
+#include <iostream>
 
-std::vector<std::pair<int, int>> findAppleBundle(const std::vector<std::vector<int>>& grid) {
-    size_t rows = grid.size();
-    if (rows == 0) return {};
-    size_t cols = grid[0].size();
+using namespace std;
 
-    // 7, 8, 9¿« ∫Ûµµ ∞ËªÍ
-    std::unordered_map<int, int> frequency;
+// Í≤©ÏûêÎ•º Î¨∏ÏûêÏó¥Î°ú Î≥ÄÌôòÌïòÏó¨ Ï∫êÏãú ÌÇ§Î°ú ÏÇ¨Ïö©
+string gridToString(const vector<vector<int>>& grid) {
+    string key;
     for (const auto& row : grid) {
         for (int num : row) {
-            if (num == 7 || num == 8 || num == 9) {
-                frequency[num]++;
+            key += to_string(num) + ",";
+        }
+        key += ";";
+    }
+    return key;
+}
+
+// ÏÇ¨Í≥ºÏùò Í∞úÏàò Í≥ÑÏÇ∞
+int countApples(const vector<vector<int>>& grid) {
+    int count = 0;
+    int rows = grid.size();
+    int cols = rows > 0 ? grid[0].size() : 0;
+    cout << "countApples: Grid size = " << rows << "x" << cols << endl;
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (grid[i][j] != 0) count++;
+        }
+    }
+    cout << "Apple count: " << count << endl;
+    return count;
+}
+
+// Î≤àÎì§ ÎÇ¥ 9ÏôÄ 8Ïùò ÏùëÏßëÏÑ± Í≥ÑÏÇ∞
+int calculateCohesion(const vector<vector<int>>& grid, const vector<pair<int, int>>& positions) {
+    int cohesion = 0;
+    int n = positions.size();
+    vector<vector<bool>> visited(grid.size(), vector<bool>(grid[0].size(), false));
+
+    for (const auto& pos : positions) {
+        visited[pos.first][pos.second] = true;
+    }
+
+    for (int i = 0; i < n; ++i) {
+        int r = positions[i].first;
+        int c = positions[i].second;
+        int num = grid[r][c];
+        if (num != 9 && num != 8) continue;
+
+        int dr[] = { -1, 1, 0, 0 };
+        int dc[] = { 0, 0, -1, 1 };
+        for (int d = 0; d < 4; ++d) {
+            int nr = r + dr[d];
+            int nc = c + dc[d];
+            if (nr >= 0 && nr < grid.size() && nc >= 0 && nc < grid[0].size() &&
+                visited[nr][nc] && (grid[nr][nc] == 9 || grid[nr][nc] == 8)) {
+                cohesion++;
             }
         }
     }
 
-    // ¥©¿˚ «’ πËø≠ ∞ËªÍ
-    std::vector<std::vector<int>> prefix(rows + 1, std::vector<int>(cols + 1, 0));
-    for (size_t i = 1; i <= rows; ++i) {
-        for (size_t j = 1; j <= cols; ++j) {
+    return cohesion / 2;
+}
+
+// ÎÜíÏùÄ Ïà´Ïûê(9, 8, 7) Ï†úÍ±∞ Í∞úÏàòÎ•º ÏµúÎåÄÌôî (ÏÇ¨Í≥º 50Í∞ú Ï¥àÍ≥ºÏóêÏÑú ÏÇ¨Ïö©)
+int maxHighValueRemoved(const vector<vector<int>>& grid, int depth, int maxDepth, unordered_map<string, int>& cache, int& maxPossible) {
+    if (depth >= maxDepth) return 0;
+
+    string gridKey = gridToString(grid);
+    if (cache.count(gridKey)) return cache[gridKey];
+
+    int rows = grid.size();
+    int cols = grid[0].size();
+    int maxRemoved = 0;
+
+    vector<vector<int>> prefix(rows + 1, vector<int>(cols + 1, 0));
+    for (int i = 1; i <= rows; ++i) {
+        for (int j = 1; j <= cols; ++j) {
             prefix[i][j] = prefix[i - 1][j] + prefix[i][j - 1] - prefix[i - 1][j - 1] + grid[i - 1][j - 1];
         }
     }
 
-    std::vector<int> bestBundle;
-    std::vector<std::pair<int, int>> bestCoords;
-    int bestScore = -1000000; // ∏≈øÏ ≥∑¿∫ √ ±‚∞™¿∏∑Œ æÓ∂≤ π≠¿Ω¿ÃµÁ º±≈√ ∞°¥…
-
-    // ∫Œ∫– ∞›¿⁄ «’ ∞ËªÍ «‘ºˆ
-    auto getSum = [&](size_t r1, size_t c1, size_t r2, size_t c2) {
+    auto getSum = [&](int r1, int c1, int r2, int c2) {
         return prefix[r2 + 1][c2 + 1] - prefix[r1][c2 + 1] - prefix[r2 + 1][c1] + prefix[r1][c1];
         };
 
-    // ¿¿¡˝µµ ∞ËªÍ «‘ºˆ
-    auto calculateCohesion = [&](const std::vector<std::pair<int, int>>& highValuePositions) {
-        int cohesionScore = 0;
-        for (size_t i = 0; i < highValuePositions.size(); ++i) {
-            for (size_t j = i + 1; j < highValuePositions.size(); ++j) {
-                int dr = std::abs(highValuePositions[i].first - highValuePositions[j].first);
-                int dc = std::abs(highValuePositions[i].second - highValuePositions[j].second);
-                if (dr + dc == 1) { // ∏««ÿ∆∞ ∞≈∏Æ∞° 1¿Œ ∞ÊøÏ ¿Œ¡¢
-                    cohesionScore += 1000; // ¿Œ¡¢«— Ω÷∏∂¥Ÿ 1000¡° √ﬂ∞°
-                }
-            }
-        }
-        return cohesionScore;
+    auto comp = [](const pair<int, vector<pair<int, int>>>& a, const pair<int, vector<pair<int, int>>>& b) {
+        return a.first < b.first;
         };
+    priority_queue<pair<int, vector<pair<int, int>>>, vector<pair<int, vector<pair<int, int>>>>, decltype(comp)> pq(comp);
 
-    // π≠¿Ω ¡°ºˆ ∞ËªÍ «‘ºˆ
-    auto calculateScore = [&](const std::vector<int>& bundle, const std::vector<std::pair<int, int>>& positions) {
-        int score = 0;
-        bool hasNineOne = (bundle.size() == 2 && bundle[0] == 1 && bundle[1] == 9);
-        bool hasOne = false;
-        bool hasTwo = false;
-        int highValueNum = 0; // 7, 8, 9 ¡ﬂ ∆˜«‘µ» º˝¿⁄ («œ≥™∏∏ «„øÎ)
-        std::vector<std::pair<int, int>> highValuePositions;
-
-        // π≠¿Ω ∫–ºÆ
-        for (size_t idx = 0; idx < bundle.size(); ++idx) {
-            int num = bundle[idx];
-            if (num == 1) hasOne = true;
-            if (num == 2) hasTwo = true;
-            if (num == 7 || num == 8 || num == 9) {
-                if (highValueNum == 0) {
-                    highValueNum = num; // √π π¯¬∞ 7, 8, 9∏∏ ±‚∑œ
-                    score += frequency[num] * 10; // ∫Ûµµø° ∫Ò∑ «— ¡°ºˆ
-                    highValuePositions.push_back(positions[idx]);
-                }
-                else if (highValueNum != num) {
-                    return -1000000; // 7, 8, 9∞° µŒ ∞≥ ¿ÃªÛ ∆˜«‘µ«∏È π´»ø»≠
-                }
-                else {
-                    highValuePositions.push_back(positions[idx]); // µø¿œ«— ≥Ù¿∫ º˝¿⁄¥¬ ¿ßƒ° √ﬂ∞°
-                }
-            }
-        }
-
-        // ±‚∫ª ¡°ºˆ: π≠¿Ω ≈©±‚ø° ∫Ò∑ 
-        score += bundle.size() * 50;
-
-        // øÏº±º¯¿ß 1: [9, 1] π≠¿Ω
-        if (hasNineOne) score += 10000;
-
-        // 7, 8, 9 ∆˜«‘ ∫∏≥ Ω∫
-        if (highValueNum != 0) score += 1000;
-
-        // ¿¿¡˝µµ ¡°ºˆ √ﬂ∞°
-        if (highValuePositions.size() > 1) {
-            score += calculateCohesion(highValuePositions);
-        }
-
-        // ∆–≥Œ∆º: 1∞˙ 2 ∆˜«‘
-        if (hasOne) score -= 500;
-        if (hasTwo) score -= 300;
-
-        return score;
-        };
-
-    // ∏µÁ ∞°¥…«— ¡˜ªÁ∞¢«¸ ≈Ωªˆ
-    for (size_t r1 = 0; r1 < rows; ++r1) {
-        for (size_t r2 = r1; r2 < rows; ++r2) {
-            for (size_t c1 = 0; c1 < cols; ++c1) {
-                for (size_t c2 = c1; c2 < cols; ++c2) {
+    for (int r1 = 0; r1 < rows; ++r1) {
+        for (int r2 = r1; r2 < rows; ++r2) {
+            for (int c1 = 0; c1 < cols; ++c1) {
+                for (int c2 = c1; c2 < cols; ++c2) {
                     if (getSum(r1, c1, r2, c2) == 10) {
-                        std::vector<int> bundle;
-                        std::vector<std::pair<int, int>> positions;
-                        for (size_t i = r1; i <= r2; ++i) {
-                            for (size_t j = c1; j <= c2; ++j) {
+                        vector<int> bundle;
+                        vector<pair<int, int>> positions;
+                        for (int i = r1; i <= r2; ++i) {
+                            for (int j = c1; j <= c2; ++j) {
                                 if (grid[i][j] != 0) {
                                     bundle.push_back(grid[i][j]);
-                                    positions.push_back({ static_cast<int>(i), static_cast<int>(j) });
+                                    positions.push_back({ i, j });
                                 }
                             }
                         }
-                        std::sort(bundle.begin(), bundle.end());
 
-                        int score = calculateScore(bundle, positions);
+                        int maxNum = 0;
+                        int lowValuePenalty = 0;
+                        for (int num : bundle) {
+                            if (num == 9) { maxNum = 9; break; }
+                            else if (num == 8) maxNum = max(maxNum, 8);
+                            else if (num == 7) maxNum = max(maxNum, 7);
+                            if (num == 1 || num == 2) lowValuePenalty++;
+                        }
+                        int cohesion = calculateCohesion(grid, positions);
+                        int score = maxNum + cohesion - lowValuePenalty;
+                        pq.push({ score, positions });
+                    }
+                }
+            }
+        }
+    }
 
-                        // ¡°ºˆ∞° ¥ı ≥Ù∞≈≥™, ∞∞¿ª ∂ß ªÁ¿¸º¯¿∏∑Œ ¿€¿∫ π≠¿Ω º±≈√
-                        if (score > bestScore || (score == bestScore && bundle < bestBundle)) {
-                            bestScore = score;
-                            bestBundle = bundle;
+    while (!pq.empty()) {
+        auto [_, positions] = pq.top();
+        pq.pop();
+
+        int highValueCount = 0;
+        for (const auto& pos : positions) {
+            int num = grid[pos.first][pos.second];
+            if (num == 7 || num == 8 || num == 9) highValueCount++;
+        }
+
+        vector<vector<int>> newGrid = grid;
+        for (const auto& pos : positions) {
+            newGrid[pos.first][pos.second] = 0;
+        }
+
+        int futureRemoved = maxHighValueRemoved(newGrid, depth + 1, maxDepth, cache, maxPossible);
+        int totalRemoved = highValueCount + futureRemoved;
+
+        if (totalRemoved + (maxDepth - depth) < maxPossible) continue;
+
+        maxRemoved = max(maxRemoved, totalRemoved);
+        maxPossible = max(maxPossible, totalRemoved);
+    }
+
+    cache[gridKey] = maxRemoved;
+    return maxRemoved;
+}
+
+// ÏµúÎåÄ ÏÇ¨Í≥º Ï†úÍ±∞ Í∞úÏàòÎ•º Í≥ÑÏÇ∞ (ÏÇ¨Í≥º 50Í∞ú Ïù¥ÌïòÏóêÏÑú ÏÇ¨Ïö©)
+int maxApplesRemoved(const vector<vector<int>>& grid, int depth, int maxDepth, unordered_map<string, int>& cache, int& maxPossible) {
+    if (depth >= maxDepth) return 0;
+
+    string gridKey = gridToString(grid);
+    if (cache.count(gridKey)) return cache[gridKey];
+
+    int rows = grid.size();
+    int cols = grid[0].size();
+    int maxRemoved = 0;
+
+    vector<vector<int>> prefix(rows + 1, vector<int>(cols + 1, 0));
+    for (int i = 1; i <= rows; ++i) {
+        for (int j = 1; j <= cols; ++j) {
+            prefix[i][j] = prefix[i - 1][j] + prefix[i][j - 1] - prefix[i - 1][j - 1] + grid[i - 1][j - 1];
+        }
+    }
+
+    auto getSum = [&](int r1, int c1, int r2, int c2) {
+        return prefix[r2 + 1][c2 + 1] - prefix[r1][c2 + 1] - prefix[r2 + 1][c1] + prefix[r1][c1];
+        };
+
+    auto comp = [](const pair<int, vector<pair<int, int>>>& a, const pair<int, vector<pair<int, int>>>& b) {
+        return a.first < b.first;
+        };
+    priority_queue<pair<int, vector<pair<int, int>>>, vector<pair<int, vector<pair<int, int>>>>, decltype(comp)> pq(comp);
+
+    for (int r1 = 0; r1 < rows; ++r1) {
+        for (int r2 = r1; r2 < rows; ++r2) {
+            for (int c1 = 0; c1 < cols; ++c1) {
+                for (int c2 = c1; c2 < cols; ++c2) {
+                    if (getSum(r1, c1, r2, c2) == 10) {
+                        vector<int> bundle;
+                        vector<pair<int, int>> positions;
+                        for (int i = r1; i <= r2; ++i) {
+                            for (int j = c1; j <= c2; ++j) {
+                                if (grid[i][j] != 0) {
+                                    bundle.push_back(grid[i][j]);
+                                    positions.push_back({ i, j });
+                                }
+                            }
+                        }
+
+                        int appleCount = bundle.size();
+                        int lowValuePenalty = 0;
+                        for (int num : bundle) {
+                            if (num == 1 || num == 2) lowValuePenalty++;
+                        }
+                        int cohesion = calculateCohesion(grid, positions);
+                        int score = appleCount + cohesion - lowValuePenalty;
+                        pq.push({ score, positions });
+                    }
+                }
+            }
+        }
+    }
+
+    while (!pq.empty()) {
+        auto [_, positions] = pq.top();
+        pq.pop();
+
+        int currentRemoved = positions.size();
+        vector<vector<int>> newGrid = grid;
+        for (const auto& pos : positions) {
+            newGrid[pos.first][pos.second] = 0;
+        }
+
+        int futureRemoved = maxApplesRemoved(newGrid, depth + 1, maxDepth, cache, maxPossible);
+        int totalRemoved = currentRemoved + futureRemoved;
+
+        if (totalRemoved + (maxDepth - depth) * 10 < maxPossible) continue;
+
+        maxRemoved = max(maxRemoved, totalRemoved);
+        maxPossible = max(maxPossible, totalRemoved);
+    }
+
+    cache[gridKey] = maxRemoved;
+    return maxRemoved;
+}
+
+// ÏµúÏ†ÅÏùò Î≤àÎì§ Ï∞æÍ∏∞ Ìï®Ïàò
+vector<pair<int, int>> findAppleBundle(const vector<vector<int>>& grid) {
+    int rows = grid.size();
+    if (rows == 0) return {};
+    int cols = grid[0].size();
+
+    int appleCount = countApples(grid);
+    cout << "Grid size in findAppleBundle: " << rows << "x" << cols << endl;
+
+    vector<vector<int>> prefix(rows + 1, vector<int>(cols + 1, 0));
+    for (int i = 1; i <= rows; ++i) {
+        for (int j = 1; j <= cols; ++j) {
+            prefix[i][j] = prefix[i - 1][j] + prefix[i][j - 1] - prefix[i - 1][j - 1] + grid[i - 1][j - 1];
+        }
+    }
+
+    auto getSum = [&](int r1, int c1, int r2, int c2) {
+        return prefix[r2 + 1][c2 + 1] - prefix[r1][c2 + 1] - prefix[r2 + 1][c1] + prefix[r1][c1];
+        };
+
+    // ÏÇ¨Í≥º Í∞úÏàòÍ∞Ä 160~170Í∞úÏùº Îïå Ïû¨Í∑Ä ÌÉêÏÉâ ÏóÜÏù¥ Î≤àÎì§ ÏÑ†ÌÉù
+    if (appleCount >= 160 && appleCount <= 170) {
+        cout << "Non-recursive mode: Apple count between 160 and 170" << endl;
+        auto comp = [](const pair<int, vector<pair<int, int>>>& a, const pair<int, vector<pair<int, int>>>& b) {
+            return a.first < b.first;
+            };
+        priority_queue<pair<int, vector<pair<int, int>>>, vector<pair<int, vector<pair<int, int>>>>, decltype(comp)> pq(comp);
+
+        for (int r1 = 0; r1 < rows; ++r1) {
+            for (int r2 = r1; r2 < rows; ++r2) {
+                for (int c1 = 0; c1 < cols; ++c1) {
+                    for (int c2 = c1; c2 < cols; ++c2) {
+                        if (getSum(r1, c1, r2, c2) == 10) {
+                            vector<int> bundle;
+                            vector<pair<int, int>> positions;
+                            for (int i = r1; i <= r2; ++i) {
+                                for (int j = c1; j <= c2; ++j) {
+                                    if (grid[i][j] != 0) {
+                                        bundle.push_back(grid[i][j]);
+                                        positions.push_back({ i, j });
+                                    }
+                                }
+                            }
+
+                            int maxNum = 0;
+                            int lowValuePenalty = 0;
+                            for (int num : bundle) {
+                                if (num == 9) { maxNum = 9; break; }
+                                else if (num == 8) maxNum = max(maxNum, 8);
+                                else if (num == 7) maxNum = max(maxNum, 7);
+                                if (num == 1 || num == 2) lowValuePenalty++;
+                            }
+                            int cohesion = calculateCohesion(grid, positions);
+                            int score = maxNum + cohesion - lowValuePenalty;
+                            pq.push({ score, positions });
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!pq.empty()) {
+            return pq.top().second;
+        }
+        return {};
+    }
+
+    // ÏÇ¨Í≥º Í∞úÏàòÍ∞Ä 159Í∞ú Ïù¥ÌïòÏùº Îïå Ïû¨Í∑Ä ÌÉêÏÉâ
+    int maxDepth;
+    if (appleCount <= 30) {
+        maxDepth = 8; // ÏÇ¨Í≥º 30Í∞ú Ïù¥Ìïò: 8Îã®Í≥Ñ (maxApplesRemoved)
+    }
+    else if (appleCount <= 60) {
+        maxDepth = 5; // ÏÇ¨Í≥º 60Í∞ú Ïù¥Ìïò: 5Îã®Í≥Ñ (maxApplesRemoved)
+    }
+    else if (appleCount >= 100 && appleCount <= 159) {
+        maxDepth = 3; // maxHighValueRemoved
+    }
+    else if (appleCount > 60 && appleCount < 100) {
+        maxDepth = 4; // maxHighValueRemoved
+    }
+    else {
+        cout << "No recursion: Apple count > 170 or invalid" << endl;
+        return {};
+    }
+
+    cout << "Recursive mode: Max depth = " << maxDepth << endl;
+
+    vector<pair<int, int>> bestCoords;
+    int bestScore = -1;
+    unordered_map<string, int> cache;
+    int maxPossible = 0;
+
+    for (int r1 = 0; r1 < rows; ++r1) {
+        for (int r2 = r1; r2 < rows; ++r2) {
+            for (int c1 = 0; c1 < cols; ++c1) {
+                for (int c2 = c1; c2 < cols; ++c2) {
+                    if (getSum(r1, c1, r2, c2) == 10) {
+                        vector<int> bundle;
+                        vector<pair<int, int>> positions;
+                        for (int i = r1; i <= r2; ++i) {
+                            for (int j = c1; j <= c2; ++j) {
+                                if (grid[i][j] != 0) {
+                                    bundle.push_back(grid[i][j]);
+                                    positions.push_back({ i, j });
+                                }
+                            }
+                        }
+
+                        int highValueCount = 0;
+                        int appleCountInBundle = bundle.size();
+                        int lowValuePenalty = 0;
+                        for (int num : bundle) {
+                            if (num == 7 || num == 8 || num == 9) highValueCount++;
+                            if (num == 1 || num == 2) lowValuePenalty++;
+                        }
+                        int cohesion = calculateCohesion(grid, positions);
+
+                        vector<vector<int>> newGrid = grid;
+                        for (const auto& pos : positions) {
+                            newGrid[pos.first][pos.second] = 0;
+                        }
+
+                        int futureRemoved;
+                        if (appleCount > 50) { // ÏÇ¨Í≥º 50Í∞ú Ï¥àÍ≥º: maxHighValueRemoved
+                            futureRemoved = maxHighValueRemoved(newGrid, 1, maxDepth, cache, maxPossible);
+                        }
+                        else { // ÏÇ¨Í≥º 50Í∞ú Ïù¥Ìïò: maxApplesRemoved
+                            futureRemoved = maxApplesRemoved(newGrid, 1, maxDepth, cache, maxPossible);
+                        }
+
+                        int totalRemoved = (appleCount > 50 ? highValueCount : appleCountInBundle) + futureRemoved;
+                        int adjustedScore = totalRemoved + cohesion - lowValuePenalty;
+
+                        if (adjustedScore > bestScore) {
+                            bestScore = adjustedScore;
                             bestCoords = positions;
                         }
                     }
